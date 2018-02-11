@@ -48,7 +48,7 @@ func Options{..} = do
     -- send
     sendPacketBS dev toSend
 
-main = execParser opts >>= {- runExceptT  . -} func -- >>= printErr
+main = customExecParser (prefs $ showHelpOnError) opts >>= {- runExceptT  . -} func -- >>= printErr
     where 
     opts = info (helper <*> parseOpts) (fullDesc <> header "packet-sender")
 
