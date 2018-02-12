@@ -74,13 +74,13 @@ func Options{..} = do
 
 main = customExecParser (prefs $ showHelpOnError) opts >>= {- runExceptT  . -} func -- >>= printErr
     where 
-    opts = info (helper <*> parseOpts) (fullDesc <> header "packet-sender")
+    opts = info (helper <*> parseOpts) (fullDesc <> header "Send packets")
 
     parseOpts 
         =   Options
-        <$> strOption (short 'i' <> long "intf" <> metavar "INTF" <> help "Interface")
+        <$> strOption (short 'i' <> long "intf" <> metavar "INTF" <> help "Network interface to send on")
         <*> switch (short 'v' <> long "verbose" <> help "Print the packet contents to stdout before sending")
-        <*> switch (short 'n' <> long "dry-run" <> help "Don't actually send the packet")
+        <*> switch (short 'n' <> long "dry-run" <> help "Don't actually send the packet, just print it")
         <*> argument dataOptionParser (metavar "DATA")
 
     --printErr (Left err) = putStrLn err
