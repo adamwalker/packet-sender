@@ -2,8 +2,6 @@
 
 module Main where
 
-import Network.Pcap
-import Options.Applicative
 import Data.Monoid
 import Data.Word
 import Data.Void
@@ -11,17 +9,33 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Char
 import Data.Bifunctor
+import Control.Monad
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import Hexdump
+import Network.Pcap
+import Options.Applicative
 
 data Options = Options {
-    intf   :: String,
-    toSend :: ByteString
+    intf    :: String,
+    verbose :: Bool,
+    dryRun  :: Bool,
+    toSend  :: ByteString
 }
 
-lexeme = L.lexeme $ L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
+space' = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
+
+lexeme = L.lexeme space'
+
+symbol = L.symbol space'
+
+parens = between (symbol "(") (symbol ")")
+
+quotes = between (symbol "\"") (symbol "\"")
+
+decimal = lexeme L.decimal
 
 hexPair :: Parsec Void String Word8
 hexPair = do
@@ -29,24 +43,34 @@ hexPair = do
     c2 <- hexDigitChar
     return $ fromIntegral (digitToInt c1) * 16 + fromIntegral (digitToInt c2)
 
+expression 
+    =   concat <$> (replicate <$> (try (decimal <* symbol "*")) <*> expressions)
+    <|> quotes (many (fromIntegral . digitToInt <$> (notChar '"')))
+    <|> lexeme (pure <$> hexPair)
+    <|> parens expressions
+
+expressions = concat <$> some expression
+
 topParser :: Parsec Void String ByteString
 topParser = do
-    res <- many $ lexeme hexPair
+    res <- expressions
     eof
     return $ BS.pack res
 
 dataOptionParser :: ReadM ByteString
-dataOptionParser = eitherReader $ first show . parse topParser "STDIN"
+dataOptionParser = eitherReader $ first parseErrorPretty . parse topParser "STDIN"
 
 func Options{..} = do
 
-    print $ toSend
+    when verbose $ putStrLn $ "\n" ++ prettyHex toSend
 
-    -- open device
-    dev <- openLive intf 65535 False 0
+    unless dryRun $ do
 
-    -- send
-    sendPacketBS dev toSend
+        -- open device
+        dev <- openLive intf 65535 False 0
+
+        -- send
+        sendPacketBS dev toSend
 
 main = customExecParser (prefs $ showHelpOnError) opts >>= {- runExceptT  . -} func -- >>= printErr
     where 
@@ -54,7 +78,9 @@ main = customExecParser (prefs $ showHelpOnError) opts >>= {- runExceptT  . -} f
 
     parseOpts 
         =   Options
-        <$> strOption (short 'i' <> metavar "INTF" <> help "Interface")
+        <$> strOption (short 'i' <> long "intf" <> metavar "INTF" <> help "Interface")
+        <*> switch (short 'v' <> long "verbose" <> help "Print the packet contents to stdout before sending")
+        <*> switch (short 'n' <> long "dry-run" <> help "Don't actually send the packet")
         <*> argument dataOptionParser (metavar "DATA")
 
     --printErr (Left err) = putStrLn err
