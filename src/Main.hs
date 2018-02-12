@@ -45,7 +45,7 @@ hexPair = do
 
 expression 
     =   concat <$> (replicate <$> (try (decimal <* symbol "*")) <*> expressions)
-    <|> quotes (many (fromIntegral . digitToInt <$> (notChar '"')))
+    <|> quotes (many (fromIntegral . fromEnum <$> (notChar '"')))
     <|> lexeme (pure <$> hexPair)
     <|> parens expressions
 
