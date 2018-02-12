@@ -18,13 +18,6 @@ import Hexdump
 import Network.Pcap
 import Options.Applicative
 
-data Options = Options {
-    intf    :: String,
-    verbose :: Bool,
-    dryRun  :: Bool,
-    toSend  :: ByteString
-}
-
 space' = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
 
 lexeme = L.lexeme space'
@@ -60,6 +53,13 @@ topParser = do
     eof
     return $ BS.pack res
 
+data Options = Options {
+    intf    :: String,
+    verbose :: Bool,
+    dryRun  :: Bool,
+    toSend  :: ByteString
+}
+
 dataOptionParser :: ReadM ByteString
 dataOptionParser = eitherReader $ first parseErrorPretty . parse topParser "STDIN"
 
@@ -75,7 +75,7 @@ func Options{..} = do
         -- send
         sendPacketBS dev toSend
 
-main = customExecParser (prefs $ showHelpOnError) opts >>= {- runExceptT  . -} func -- >>= printErr
+main = customExecParser (prefs $ showHelpOnError) opts >>= func 
     where 
     opts = info (helper <*> parseOpts) (fullDesc <> header "Send packets")
 
@@ -85,7 +85,4 @@ main = customExecParser (prefs $ showHelpOnError) opts >>= {- runExceptT  . -} f
         <*> switch (short 'v' <> long "verbose" <> help "Print the packet contents to stdout before sending")
         <*> switch (short 'n' <> long "dry-run" <> help "Don't actually send the packet, just print it")
         <*> argument dataOptionParser (metavar "DATA")
-
-    --printErr (Left err) = putStrLn err
-    --printErr (Right _)  = return ()
 
