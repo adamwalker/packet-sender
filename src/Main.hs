@@ -62,7 +62,7 @@ dataOptionParser = eitherReader $ first parseErrorPretty . parse topParser "STDI
 
 func Options{..} = do
 
-    when verbose $ putStrLn $ "\n" ++ prettyHex toSend
+    when (verbose || dryRun) $ putStrLn $ "\n" ++ prettyHex toSend
 
     unless dryRun $ do
 
