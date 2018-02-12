@@ -78,7 +78,7 @@ main = customExecParser (prefs $ showHelpOnError) opts >>= {- runExceptT  . -} f
 
     parseOpts 
         =   Options
-        <$> strOption (short 'i' <> long "intf" <> metavar "INTF" <> help "Network interface to send on")
+        <$> strOption (short 'i' <> long "intf" <> metavar "INTF" <> help "Network interface to send on" <> showDefault <> value "lo")
         <*> switch (short 'v' <> long "verbose" <> help "Print the packet contents to stdout before sending")
         <*> switch (short 'n' <> long "dry-run" <> help "Don't actually send the packet, just print it")
         <*> argument dataOptionParser (metavar "DATA")
