@@ -35,6 +35,8 @@ parens = between (symbol "(") (symbol ")")
 
 quotes = between (symbol "\"") (symbol "\"")
 
+squotes = between (symbol "'") (symbol "'")
+
 decimal = lexeme L.decimal
 
 hexPair :: Parsec Void String Word8
@@ -46,6 +48,7 @@ hexPair = do
 expression 
     =   concat <$> (replicate <$> (try (decimal <* symbol "*")) <*> expressions)
     <|> quotes (many (fromIntegral . fromEnum <$> (notChar '"')))
+    <|> squotes (many (fromIntegral . fromEnum <$> (notChar '\'')))
     <|> lexeme (pure <$> hexPair)
     <|> parens expressions
 
