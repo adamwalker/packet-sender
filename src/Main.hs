@@ -20,6 +20,8 @@ import Options.Applicative
 import Data.Serialize
 
 import Data.Ethernet
+import Data.IP
+import Data.CSum
 
 ------------------------------------------------------------------------------
 --Expresssion parser
@@ -40,6 +42,8 @@ squotes = between (symbol "'") (symbol "'")
 decimal = lexeme L.decimal
 
 colon = symbol ":"
+
+dot = symbol "."
 
 hexPair :: Parsec Void String Word8
 hexPair = do
@@ -76,6 +80,16 @@ parseEtherAddress
     <*  colon <*> hexPair
     <*  colon <*> hexPair
 
+parseIPAddress :: Parsec Void String IPv4
+parseIPAddress 
+    =   func 
+    <$> decimal
+    <*  dot <*> decimal
+    <*  dot <*> decimal
+    <*  dot <*> decimal
+    where
+    func w x y z = IPv4 $ fromIntegral $ w * 2^24 + x * 2^16 + y * 2^8 + z
+
 broadcastEther = Ethernet 0xff 0xff 0xff 0xff 0xff 0xff
 
 optionify :: Parsec Void String a -> ReadM a
@@ -92,18 +106,48 @@ parseEthernetHdr
     <*> pure Nothing
     <*> option (optionify L.hexadecimal)     (short 't' <> long "ethertype" <> help "Ether type"              <> value 0x0800         <> showDefault)
 
+parseIPHeader :: Parser IPv4Header
+parseIPHeader 
+    =   IPv4Hdr
+    <$> pure 5
+    <*> pure 4
+    <*> pure 0
+    <*> option auto (short 'l' <> long "length" <> help "length" <> value 20 <> showDefault)
+    <*> pure 0
+    <*> pure []
+    <*> pure 0
+    <*> pure 0
+    <*> option auto (short 'p' <> long "protocol" <> help "protocol" <> value 0x11 <> showDefault)
+    <*> pure (zeroCSum)
+    <*> option (optionify parseIPAddress) (short 's' <> long "source" <> help "Source IP address"      <> value (IPv4 0x7f000001) <> showDefault)
+    <*> option (optionify parseIPAddress) (short 'd' <> long "dest"   <> help "Destination IP address" <> value (IPv4 0x7f000001) <> showDefault)
+
+data Layer3
+    = IPCommand        IPv4Header ByteString
+    | RawLayer3Command ByteString
+
+putLayer3 :: Layer3 -> ByteString
+putLayer3 (IPCommand        hdr dat) = runPut (put hdr) <> dat
+putLayer3 (RawLayer3Command dat)     = dat
+
+layer3Parser :: Parser Layer3
+layer3Parser = hsubparser $ mconcat [
+        command "ip"  (info (IPCommand        <$> parseIPHeader <*> dataOptionParser) (progDesc "Send IP packet")),
+        command "raw" (info (RawLayer3Command <$> dataOptionParser)                   (progDesc "Raw payload"))
+    ]
+
 data Command
-    = EthernetCommand  EthernetHeader ByteString
+    = EthernetCommand  EthernetHeader Layer3
     | RawLayer2Command ByteString
 
 putCommand :: Command -> ByteString
-putCommand (EthernetCommand  hdr dat) = runPut (put hdr) <> dat
+putCommand (EthernetCommand  hdr dat) = runPut (put hdr) <> putLayer3 dat
 putCommand (RawLayer2Command dat)     = dat
 
 parseCommand :: Parser Command
 parseCommand = hsubparser $ mconcat [
-        command "ether" (info (EthernetCommand  <$> parseEthernetHdr <*> dataOptionParser) (progDesc "Send ethernet packet")),
-        command "raw"   (info (RawLayer2Command <$> dataOptionParser) (progDesc "Raw packet"))
+        command "ether" (info (EthernetCommand  <$> parseEthernetHdr <*> layer3Parser) (progDesc "Send ethernet packet")),
+        command "raw"   (info (RawLayer2Command <$> dataOptionParser)                  (progDesc "Raw payload"))
     ]
 
 data Options = Options {
