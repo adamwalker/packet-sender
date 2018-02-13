@@ -21,6 +21,7 @@ import Data.Serialize
 
 import Data.Ethernet
 import Data.IP
+import Data.UDP
 import Data.CSum
 
 ------------------------------------------------------------------------------
@@ -118,22 +119,44 @@ parseIPHeader
     <*> pure 0
     <*> pure 0
     <*> option auto (short 'p' <> long "protocol" <> help "protocol" <> value 0x11 <> showDefault)
-    <*> pure (zeroCSum)
+    <*> pure zeroCSum
     <*> option (optionify parseIPAddress) (short 's' <> long "source" <> help "Source IP address"      <> value (IPv4 0x7f000001) <> showDefault)
     <*> option (optionify parseIPAddress) (short 'd' <> long "dest"   <> help "Destination IP address" <> value (IPv4 0x7f000001) <> showDefault)
 
+parseUDPHeader :: Parser UDPHeader
+parseUDPHeader  
+    =   UDPHdr
+    <$> option (UDPPort <$> auto) (short 's' <> long "source" <> help "Source port"      <> value (UDPPort 0) <> showDefault)
+    <*> option (UDPPort <$> auto) (short 'd' <> long "dest"   <> help "Destination port" <> value (UDPPort 0) <> showDefault)
+    <*> option auto (short 'l' <> long "length" <> help "length" <> value 0 <> showDefault)
+    <*> (pure zeroCSum)
+
+data Layer4
+    = UDPCommand       UDPHeader ByteString
+    | RawLayer4Command ByteString
+
+putLayer4 :: Layer4 -> ByteString
+putLayer4 (UDPCommand       hdr dat) = runPut (put hdr) <> dat
+putLayer4 (RawLayer4Command dat)     = dat
+
+layer4Parser :: Parser Layer4
+layer4Parser = hsubparser $ mconcat [
+        command "udp" (info (UDPCommand       <$> parseUDPHeader <*> dataOptionParser) (progDesc "Send UDP packet")),
+        command "raw" (info (RawLayer4Command <$> dataOptionParser)                    (progDesc "Raw payload"))
+    ]
+
 data Layer3
-    = IPCommand        IPv4Header ByteString
+    = IPCommand        IPv4Header Layer4
     | RawLayer3Command ByteString
 
 putLayer3 :: Layer3 -> ByteString
-putLayer3 (IPCommand        hdr dat) = runPut (put hdr) <> dat
+putLayer3 (IPCommand        hdr dat) = runPut (put hdr) <> putLayer4 dat
 putLayer3 (RawLayer3Command dat)     = dat
 
 layer3Parser :: Parser Layer3
 layer3Parser = hsubparser $ mconcat [
-        command "ip"  (info (IPCommand        <$> parseIPHeader <*> dataOptionParser) (progDesc "Send IP packet")),
-        command "raw" (info (RawLayer3Command <$> dataOptionParser)                   (progDesc "Raw payload"))
+        command "ip"  (info (IPCommand        <$> parseIPHeader <*> layer4Parser) (progDesc "Send IP packet")),
+        command "raw" (info (RawLayer3Command <$> dataOptionParser)               (progDesc "Raw payload"))
     ]
 
 data Command
