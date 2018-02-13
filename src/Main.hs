@@ -96,7 +96,7 @@ optionify :: Parsec Void String a -> ReadM a
 optionify parser = eitherReader $ first parseErrorPretty . parse parser "CMDLINE"
 
 dataOptionParser :: Parser ByteString
-dataOptionParser = argument (optionify topParser) (metavar "DATA")
+dataOptionParser = argument (optionify topParser) (metavar "DATA" <> value mempty)
 
 parseEthernetHdr :: Parser EthernetHeader
 parseEthernetHdr 
