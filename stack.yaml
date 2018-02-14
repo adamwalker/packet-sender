@@ -1,0 +1,5 @@
+resolver: nightly-2017-11-30
+
+extra-deps:
+- pcap-0.4.5.2
+- network-data-0.5.3
