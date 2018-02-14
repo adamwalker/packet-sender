@@ -19,3 +19,56 @@ Available commands:
   raw                      Raw payload
 ```
 
+# Data expressions
+
+Raw packet data can be specified with simple expressions.
+
+## Raw hex
+
+```
+$ packets-sender -n raw 0123456789abcde
+
+Length: 8 (0x8) bytes
+0000:   01 23 45 67  89 ab cd ef                             .#Eg....
+```
+
+## Replication
+
+```
+$ packet-sender -n raw "64 * aa"
+
+Length: 64 (0x40) bytes
+0000:   aa aa aa aa  aa aa aa aa  aa aa aa aa  aa aa aa aa   ................
+0010:   aa aa aa aa  aa aa aa aa  aa aa aa aa  aa aa aa aa   ................
+0020:   aa aa aa aa  aa aa aa aa  aa aa aa aa  aa aa aa aa   ................
+0030:   aa aa aa aa  aa aa aa aa  aa aa aa aa  aa aa aa aa   ................
+```
+
+## Numbers with specified width and base 
+
+```
+$ packet-sender -n raw "16#d12345678"
+
+Length: 16 (0x10) bytes
+0000:   00 00 00 00  00 00 00 00  00 00 00 00  00 bc 61 4e   ..............aN
+```
+
+## ASCII strings
+
+
+```
+$ packet-sender -n raw "'abcdefghijkl'"
+
+Length: 12 (0xc) bytes
+0000:   61 62 63 64  65 66 67 68  69 6a 6b 6c                abcdefghijkl
+```
+
+## Combining with concatenation and parentheses
+
+```
+$ packet-sender -n raw "'abcdefghijkl' 5 * (2#d10 abab)"
+
+Length: 32 (0x20) bytes
+0000:   61 62 63 64  65 66 67 68  69 6a 6b 6c  00 0a ab ab   abcdefghijkl....
+0010:   00 0a ab ab  00 0a ab ab  00 0a ab ab  00 0a ab ab   ................
+```
