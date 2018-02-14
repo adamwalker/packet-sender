@@ -72,3 +72,15 @@ Length: 32 (0x20) bytes
 0000:   61 62 63 64  65 66 67 68  69 6a 6b 6c  00 0a ab ab   abcdefghijkl....
 0010:   00 0a ab ab  00 0a ab ab  00 0a ab ab  00 0a ab ab   ................
 ```
+
+# Protocols
+
+```
+$ packet-sender -n ether -s aa:aa:aa:aa:aa:aa ip -s 12.12.12.12 -l 28 udp -l 8 "'aaaaaa'"
+
+Length: 48 (0x30) bytes
+0000:   ff ff ff ff  ff ff aa aa  aa aa aa aa  08 00 45 00   ..............E.
+0010:   00 1c 00 00  00 00 00 11  00 00 0c 0c  0c 0c 7f 00   ................
+0020:   00 01 00 00  00 00 00 08  00 00 61 61  61 61 61 61   ..........aaaaaa
+```
+
