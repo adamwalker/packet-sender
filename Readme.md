@@ -65,6 +65,8 @@ Length: 12 (0xc) bytes
 
 ## Combining with concatenation and parentheses
 
+Concatenation has precedence over *
+
 ```
 $ packet-sender -n raw "'abcdefghijkl' 5 * (2#d10 abab)"
 
