@@ -48,10 +48,10 @@ optionify parser = eitherReader $ first parseErrorPretty . parse parser "CMDLINE
 parseEthernetHdr :: Parser EthernetHeader
 parseEthernetHdr 
     =   EthernetHdr
-    <$> option (optionify parseEtherAddress) (short 'd' <> long "dest"      <> help "Destination MAC address" <> value broadcastEther <> showDefault)
-    <*> option (optionify parseEtherAddress) (short 's' <> long "source"    <> help "Source MAC address"      <> value broadcastEther <> showDefault)
-    <*> pure Nothing
-    <*> option (optionify L.hexadecimal)     (short 't' <> long "ethertype" <> help "Ether type"              <> value 0x0800         <> showDefault)
+    <$> option (optionify parseEtherAddress)       (short 'd' <> long "dest"      <> help "Destination MAC address" <> value broadcastEther <> showDefault)
+    <*> option (optionify parseEtherAddress)       (short 's' <> long "source"    <> help "Source MAC address"      <> value broadcastEther <> showDefault)
+    <*> optional (option (optionify L.hexadecimal) (short 'v' <> long "vlan-tag"  <> help "VLAN tag"))
+    <*> option (optionify L.hexadecimal)           (short 't' <> long "ethertype" <> help "Ether type"              <> value 0x0800         <> showDefault)
 
 parseIPHeader :: Parser IPv4Header
 parseIPHeader 
