@@ -2,7 +2,6 @@
 
 module Main where
 
-import Data.Monoid
 import Data.ByteString (ByteString)
 import Control.Monad
 

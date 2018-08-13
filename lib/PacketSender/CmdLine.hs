@@ -1,7 +1,6 @@
 module PacketSender.CmdLine where
 
 import Data.Void
-import Data.Monoid
 import Data.Bifunctor
 
 import Options.Applicative
