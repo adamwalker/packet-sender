@@ -42,7 +42,7 @@ parseIPAddress
 broadcastEther = Ethernet 0xff 0xff 0xff 0xff 0xff 0xff
 
 optionify :: Parsec Void String a -> ReadM a
-optionify parser = eitherReader $ first parseErrorPretty . parse parser "CMDLINE"
+optionify parser = eitherReader $ first errorBundlePretty . parse parser "CMDLINE"
 
 parseEthernetHdr :: Parser EthernetHeader
 parseEthernetHdr 

@@ -62,8 +62,8 @@ literal = do
 expression 
     =   literal
     <|> concat <$> (replicate <$> (try (decimal <* symbol "*")) <*> expressions)
-    <|> quotes (many (fromIntegral . fromEnum <$> (notChar '"')))
-    <|> squotes (many (fromIntegral . fromEnum <$> (notChar '\'')))
+    <|> quotes (many (fromIntegral . fromEnum <$> (anySingleBut '"')))
+    <|> squotes (many (fromIntegral . fromEnum <$> (anySingleBut '\'')))
     <|> lexeme (pure <$> hexPair)
     <|> parens expressions
 
